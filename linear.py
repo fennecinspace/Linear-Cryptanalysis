@@ -5,36 +5,11 @@ REVSBOX = [14,   5,   6,  10,   3,  15,  7,  9,  11,  0,  4,  1,   2,   8,  13, 
 
 TableApproximation = []
 
-KEY1 = None
-KEY2 = None
-MESSAGE_CLAIR = []
-MESSAGE_CHIFFRE = []
+KEY1 = KEY2 = None
+MESSAGE_CLAIR, MESSAGE_CHIFFRE = [], []
 
-def main():
-    print('GENRATION DES DONNÉES:')
-    print('--------------------------------')
-    GenererDonnee() 
-    print('--------------------------------')
-
-    print('\nDemo Cryptanalyse Liniere')
-    TouverApproximation()
-
-    print('\nRecherche de la Meilleur Approximation')
-    meilleurApprox = trouverMeilleurApproximation()
-    masquesMeilleurApprox = trouverMasqueMeilleurApproximation(meilleurApprox, True)
-    for i_o_masque in masquesMeilleurApprox:
-        print('Meilleure Approximation Trouvée :','{0} -> {1} : {2} = {1:04b} : {2:04b}'.format(meilleurApprox,i_o_masque[0],i_o_masque[1]))
-    print('--------------------------------')
-
-    print('\nAttaque Linière :')
-    KeyA, KeyB = AttaqueLiniere(random.choice(masquesMeilleurApprox))
-    if KeyA == -1 or KeyB == -1:
-        print('ECHEC')
-    else:
-        print('Clé Trouvé !')
-        print('KEY 1: {0} = {0:04b}\nKEY 2: {1} = {1:04b}'.format(KeyA, KeyB))
-        print('KEY = KEY1KEY2 = {0:04b}{1:04b}'.format(KeyA,KeyB))
-    print('--------------------------------')
+fonction_du_round = lambda message, key : SBOX[message ^ key]
+fonction_du_round_enverser = lambda message, key : SBOX[message] ^ key
 
 def GenererDonnee():
     global KEY1, KEY2, MESSAGE_CLAIR, MESSAGE_CHIFFRE
@@ -50,12 +25,6 @@ def GenererDonnee():
         print('MESSAGE {0}:'.format(i+1))
         print('   CLAIR   {0} = {0:04b}'.format(MESSAGE_CLAIR[i]))
         print('   CHIFFRÉ {0} = {0:04b}'.format(MESSAGE_CHIFFRE[i]))
-
-def fonction_du_round(message, key):
-    return SBOX[message ^ key]
-
-def fonction_du_round_enverser(message,key):
-    return SBOX[message] ^ key
 
 def chiffrerMessage(message, k1, k2):
     # round 1
@@ -79,8 +48,7 @@ def TouverApproximation():
         for j in range(0,16):
             TableApproximation[i] += [0]
 
-    print('Table d\'approximation initialisé')
-    print('--------------------------------')
+    print('Table d\'approximation initialisé', '\n--------------------------------')
     afficherTableApproximation(TableApproximation)
 
     ## recherche d'approximation
@@ -92,8 +60,7 @@ def TouverApproximation():
                     TableApproximation[i_mask][o_mask] += 1               
     
     ## affichage de l'approximation liniere
-    print('Approximation Trouvé !')
-    print('--------------------------------')
+    print('\nApproximation Trouvé !', '\n-------------------------------')
     afficherTableApproximation(TableApproximation)
 
 def TrouverParite(x, y):
@@ -108,15 +75,13 @@ def TrouverParite(x, y):
     return parity
 
 def afficherTableApproximation(matrix):
-    print('     | ', end ='')
+    print('     | ', end = '')
     for i in range (1,16):
         print("{0:0=2d}".format(i), '  ', end = '')
-    print('|')
-    print('------------------------------------------------------------------------------------')
+    print('|\n', '------------------------------------------------------------------------------------')
 
     for i in range(1,len(matrix)):
-        print('|' , "{0:0=2d}".format(i),end = '')
-        print(' | ', end ='')
+        print('|' , "{0:0=2d}".format(i), ' | ', end = '')
         for j in range(1, len(matrix[i])):
             print("{0:0=2d}".format(matrix[i][j]), '  ', end = '')
         print('| ')
@@ -161,10 +126,10 @@ def AttaqueLiniere(masques):
                 Score_Cle[K1_possible] += 1
             else:
                 Score_Cle[K1_possible] -= 1
-    print('Score de chaque K1 Trouvé !')
+    print('\nScore de chaque K1 Trouvé !')
     print(Score_Cle)
 
-    print('Recherche des Meilleurs K1 (plus grand score)')
+    print('\nRecherche des Meilleurs K1 (plus grand score)')
     meilleur_score = -100
     for i in range (0,len(Score_Cle)):
         if Score_Cle[i] > meilleur_score:
@@ -176,27 +141,45 @@ def AttaqueLiniere(masques):
     print('Liste des Meilleurs K1 Trouvés !')
     print(meilleur_cles)
 
-    print('Recherche de K2')
+    print('\nRecherche de K2')
     KeyA, KeyB = TrouverK2(meilleur_cles)
 
 
     return KeyA, KeyB
 
 def TrouverK2(k1_list):
-    key1 = -1
-    key2 = -1
     for k1 in k1_list:
         k1_mal = False
         k2 = fonction_du_round(MESSAGE_CLAIR[0], k1) ^ REVSBOX[MESSAGE_CHIFFRE[0]]
+        
         for i in range(0, len (MESSAGE_CHIFFRE)):
-            message = chiffrerMessage(MESSAGE_CLAIR[i],k1,k2)
+            message = chiffrerMessage(MESSAGE_CLAIR[i], k1, k2)
             if message != MESSAGE_CHIFFRE[i]:
                 k1_mal = True
-        if k1_mal == 0:
-            key1 = k1
-            key2 = k2
-            break
+        
+        if k1_mal == False:
+            return k1, k2
     
-    return key1, key2
-# main
-main()
+    return -1, -1
+
+if __name__ == '__main__':
+    print('GENRATION DES DONNÉES:')
+    GenererDonnee() 
+
+    print('\nDemo Cryptanalyse Liniere', '\n-------------------------\n')
+    TouverApproximation()
+
+    print('\nRecherche de la Meilleur Approximation')
+    meilleurApprox = trouverMeilleurApproximation()
+    masquesMeilleurApprox = trouverMasqueMeilleurApproximation(meilleurApprox, True)
+    for i_o_masque in masquesMeilleurApprox:
+        print('Meilleure Approximation Trouvée :','{0} -> {1} : {2} = {1:04b} : {2:04b}'.format(meilleurApprox,i_o_masque[0],i_o_masque[1]))
+
+    print('\nAttaque Linière :\n')
+    KeyA, KeyB = AttaqueLiniere(random.choice(masquesMeilleurApprox))
+    if KeyA == -1 or KeyB == -1:
+        print('\nECHEC : Clé non Trouvé !')
+    else:
+        print('\nClé Trouvé !')
+        print('KEY 1: {0} = {0:04b}\nKEY 2: {1} = {1:04b}'.format(KeyA, KeyB))
+        print('KEY = KEY1KEY2 = {0:04b}{1:04b}'.format(KeyA,KeyB))
